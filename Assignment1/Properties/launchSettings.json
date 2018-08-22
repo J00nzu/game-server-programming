@@ -1,0 +1,12 @@
+{
+  "profiles": {
+    "Assignment1": {
+      "commandName": "Project",
+      "commandLineArgs": "realtime Arielinkatu"
+    },
+    "OfflineAssignment1": {
+      "commandName": "Project",
+      "commandLineArgs": "offline Arielinkatu"
+    }
+  }
+}
