@@ -45,10 +45,8 @@ namespace Assignment1 {
 				await client.GetAsync(new Uri("http://api.digitransit.fi/routing/v1/routers/hsl/bike_rental"));
 			
 			foreach (
-				var bikeData in (
-				JsonConvert.DeserializeObject(await gettask.Content.ReadAsStringAsync(),
-				typeof(BikeRentalStationsList)) as BikeRentalStationsList).stations
-				) 
+				var bikeData in 
+				JsonConvert.DeserializeObject<BikeRentalStationsList>(await gettask.Content.ReadAsStringAsync()).stations)
 			{
 
 				if (bikeData.name.Contains(stationName)) {
