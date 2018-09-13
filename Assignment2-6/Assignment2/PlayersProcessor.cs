@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Assignment2.Models;
 
 namespace Assignment2 {
 	public class PlayersProcessor {
@@ -27,6 +28,7 @@ namespace Assignment2 {
 			nuPlayer.Name = player.Name;
 			nuPlayer.IsBanned = false;
 			nuPlayer.CreationTime = DateTime.Now;
+			nuPlayer.Items = new List<Item>();
 
 			return _repository.CreatePlayer(nuPlayer);
 		}

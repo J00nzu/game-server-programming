@@ -1,9 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using Assignment2.Models;
+using MongoDB.Bson.Serialization.Attributes;
 
 namespace Assignment2 {
+
 	public class Player {
+		[BsonId]
 		public Guid Id {
 			get; set;
 		}
@@ -20,6 +24,10 @@ namespace Assignment2 {
 			get; set;
 		}
 		public DateTime CreationTime {
+			get; set;
+		}
+
+		public List<Item> Items {
 			get; set;
 		}
 	}

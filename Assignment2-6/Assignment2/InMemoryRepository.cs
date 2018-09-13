@@ -12,12 +12,10 @@ namespace Assignment2 {
 
 		private ReaderWriterLock Lock;
 		private Dictionary<Guid, Player> players;
-		private Dictionary<Guid, Item> items;
 
 		public InMemoryRepository () {
 			Lock = new ReaderWriterLock();
 			players = new Dictionary<Guid, Player>();
-			items = new Dictionary<Guid, Item>();
 		}
 
 		public async Task<Player> GetPlayer(Guid id) {
@@ -80,7 +78,7 @@ namespace Assignment2 {
 			Lock.AcquireReaderLock(timeOut);
 
 			try {
-				Item item = items[itemId];
+				Item item = GetItemByID(playerId, itemId);
 
 				//Not sure if beneficial. Might just create problems.
 				/*if (item.ownerId == playerId) { 
@@ -97,7 +95,7 @@ namespace Assignment2 {
 
 		public async Task<Item[]> GetAllItems(Guid playerId) {
 			Lock.AcquireReaderLock(timeOut);
-			Item[] ret = items.Values.Where(x => x.ownerId == playerId).ToArray();
+			Item[] ret = players[playerId].Items.ToArray();
 			Lock.ReleaseReaderLock();
 
 			return ret;
@@ -105,7 +103,7 @@ namespace Assignment2 {
 
 		public async Task<Item> CreateItem(Guid playerId, Item item) {
 			Lock.AcquireWriterLock(timeOut);
-			items.Add(item.Id, item);
+			players[playerId].Items.Add(item);
 			Lock.ReleaseWriterLock();
 			return item;
 		}
@@ -114,7 +112,7 @@ namespace Assignment2 {
 			Lock.AcquireWriterLock(timeOut);
 
 			try {
-				Item i = items[itemId];
+				Item i = GetItemByID(playerId, itemId);
 				i.Level = item.Level;
 				return i;
 			} finally {
@@ -126,12 +124,30 @@ namespace Assignment2 {
 			Lock.AcquireWriterLock(timeOut);
 
 			try {
-				Item item = items[itemId];
-				items.Remove(itemId);
+				Player player;
+				Item item = GetItemByID(playerId, itemId, out player);
+				player.Items.Remove(item);
 				return item;
 			}finally {
 				Lock.ReleaseWriterLock();
 			}
+		}
+
+		private Item GetItemByID (Guid playerId, Guid itemId) {
+			Player player;
+			return GetItemByID(playerId, itemId, out player);
+		}
+
+		private Item GetItemByID (Guid playerId, Guid itemId, out Player player) {
+			player = players[playerId];
+
+			foreach (Item playerItem in player.Items) {
+				if (playerItem.Id == itemId) {
+					return playerItem;
+				}
+			}
+
+			return null;
 		}
 	}
 }

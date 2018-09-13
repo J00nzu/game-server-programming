@@ -22,7 +22,6 @@ namespace Assignment2.Models {
 		public int Level { get; set; }
 		public ItemType Type { get; set; }
 		public DateTime CreationDate { get; set; }
-		public Guid ownerId;
 	}
 
 	public class NewItem {

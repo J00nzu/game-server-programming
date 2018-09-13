@@ -32,7 +32,6 @@ namespace Assignment2.Processors {
 				Level = item.Level,
 				Type = item.Type,
 				CreationDate = item.CreationDate,
-				ownerId = playerId,
 				Name = item.Name
 			};
 

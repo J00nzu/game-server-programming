@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Builder;
+﻿using Assignment2_6.Assignment4;
+using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
@@ -16,7 +17,7 @@ namespace Assignment2 {
 
 		// This method gets called by the runtime. Use this method to add services to the container.
 		public void ConfigureServices (IServiceCollection services) {
-			services.UseRepository(new InMemoryRepository());
+			services.UseRepository(new MongoDbRepository("mongodb://localhost:27017"));
 			services.UsePlayersProcessor();
 			services.UseItemsProcessor();
 
