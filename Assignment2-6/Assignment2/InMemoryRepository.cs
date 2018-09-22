@@ -5,6 +5,8 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Assignment2.Models;
+using Assignment5;
+using Microsoft.CodeAnalysis.CSharp;
 
 namespace Assignment2 {
 	class InMemoryRepository : IRepository {
@@ -30,12 +32,58 @@ namespace Assignment2 {
 
 		}
 
+		public async Task<Player> GetPlayer<T> (Filter<Player, T> filter) {
+			Player[] players = await GetAllPlayers();
+			foreach (Player player in players) {
+				if (filter.Satisfy(player)) {
+					return player;
+				}
+			}
+			return null;
+		}
+
+
 		public async Task<Player[]> GetAllPlayers() {
 			Lock.AcquireReaderLock(timeOut);
 			Player[] ret = players.Values.ToArray();
 			Lock.ReleaseReaderLock();
 
 			return ret;
+		}
+
+		public async Task<Player[]> GetAllPlayers<T> (Filter<Player, T> filter) {
+			//no need for lock since it uses GetAllPlayers internally and doesn't access the main dictionary directly
+			List<Player> filtered = new List<Player>();
+			Player[] allplayers = await GetAllPlayers();
+
+			foreach (Player player in allplayers) {
+				if (filter.Satisfy(player)) {
+					filtered.Add(player);
+				}
+			}
+
+			return filtered.ToArray();
+		}
+
+		public async Task<Player[]> GetPlayersSortedByScore (int num, SortOrder order) {
+			Lock.AcquireReaderLock(timeOut);
+			Player[] toReturn;
+			try {
+				switch (order) {
+					case SortOrder.Ascending:
+						toReturn = players.Values.OrderBy(x => x.Score).Take(num).ToArray();
+						break;
+					case SortOrder.Descending:
+						toReturn = players.Values.OrderByDescending(x => x.Score).Take(num).ToArray();
+						break;
+					default:
+						throw new ArgumentOutOfRangeException(nameof(order), order, null);
+				}
+			}
+			finally {
+				Lock.ReleaseReaderLock();
+			}
+			return toReturn;
 		}
 
 		public async Task<Player> CreatePlayer(Player player) {
@@ -73,6 +121,43 @@ namespace Assignment2 {
 				Lock.ReleaseWriterLock();
 			}
 		}
+
+		public async Task IncrementScorePlayer(Guid id, PlayerScoreIncrement scoreIncrement) {
+			Lock.AcquireWriterLock(timeOut);
+			try {
+				Player play = players[id];
+				play.Score += scoreIncrement.ScoreIncrement;
+			} finally {
+				Lock.ReleaseWriterLock();
+			}
+		}
+
+		public async Task NameChangePlayer(Guid id, PlayerNameUpdate nameChange) {
+			Lock.AcquireWriterLock(timeOut);
+			try {
+				Player play = players[id];
+				play.Name = nameChange.Name;
+			} finally {
+				Lock.ReleaseWriterLock();
+			}
+		}
+
+		public async Task<int> GetAverageScoreForPlayersBetweenDates(DateTime start, DateTime end) {
+			int totalScore = 0;
+			int numPlayers = 0;
+
+			foreach (Player player in players.Values) {
+				if (player.CreationTime > start && player.CreationTime < end) {
+					numPlayers++;
+					totalScore += player.Score;
+				}
+			}
+
+			if (numPlayers == 0) // to avoid division by zero
+				return 0;
+			return totalScore / numPlayers;
+		}
+
 
 		public async Task<Item> GetItem(Guid playerId, Guid itemId) {
 			Lock.AcquireReaderLock(timeOut);

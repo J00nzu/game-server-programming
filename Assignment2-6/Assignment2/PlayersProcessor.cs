@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Assignment2.Models;
+using Assignment2_6.Assignment5;
+using Assignment5;
 
 namespace Assignment2 {
 	public class PlayersProcessor {
@@ -16,8 +18,20 @@ namespace Assignment2 {
 			return _repository.GetPlayer(id);
 		}
 
+		public Task<Player> Get <T>(Filter<Player, T> filter) {
+			return _repository.GetPlayer(filter);
+		}
+
 		public Task<Player[]> GetAll () {
 			return _repository.GetAllPlayers();
+		}
+
+		public Task<Player[]> GetAll<T> (Filter<Player, T> filter) {
+			return _repository.GetAllPlayers(filter);
+		}
+
+		public Task<Player[]> GetPlayersByScoreDescending (int num) {
+			return _repository.GetPlayersSortedByScore(num, SortOrder.Descending);
 		}
 
 		public Task<Player> Create (NewPlayer player) {
@@ -38,6 +52,16 @@ namespace Assignment2 {
 		public Task<Player> Delete (Guid id) {
 			return _repository.DeletePlayer(id);
 		}
+		public void IncrementScore (Guid id, PlayerScoreIncrement scoreIncrement) {
+			_repository.IncrementScorePlayer(id, scoreIncrement).Wait();
+		}
 
+		public void ChangeName (Guid id, PlayerNameUpdate nameUpdate) {
+			_repository.NameChangePlayer(id, nameUpdate).Wait();
+		}
+
+		public Task<int> AverageScoreBetweenDates (BetweenDatesSelector dates) {
+			return _repository.GetAverageScoreForPlayersBetweenDates(dates.startDate, dates.endDate);
+		}
 	}
 }

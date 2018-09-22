@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Assignment2;
 using Assignment2.Models;
+using Assignment5;
 using MongoDB.Driver;
 
 namespace Assignment2_6.Assignment4
@@ -32,14 +33,45 @@ namespace Assignment2_6.Assignment4
 		    return result.Single();
 	    }
 
-	    public async Task<Player[]> GetAllPlayers() {
+	    public async Task<Player> GetPlayer<T> (Filter<Player, T> filter) {
+		    var result = await _players.FindAsync(filter.GetMongoDbFilter());
+		    return result.First();
+	    }
+
+		public async Task<Player[]> GetAllPlayers() {
 		    var filter = Builders<Player>.Filter.Empty;
 		    var result = await _players.FindAsync(filter);
 
 		    return result.ToList().ToArray();
 		}
 
-	    public async Task<Player> CreatePlayer(Player player) {
+		public async Task<Player[]> GetAllPlayers<T> (Filter<Player, T> filter) {
+			var result = await _players.FindAsync(filter.GetMongoDbFilter());
+			return result.ToList().ToArray();
+		}
+
+		public async Task<Player[]> GetPlayersSortedByScore (int num, SortOrder order) {
+
+			var filter = Builders<Player>.Filter.Empty;
+			SortDefinition<Player> sortBy;
+
+			switch (order) {
+				case SortOrder.Ascending:
+					sortBy = Builders<Player>.Sort.Ascending("Score");
+					break;
+				case SortOrder.Descending:
+					sortBy = Builders<Player>.Sort.Descending("Score");
+					break;
+				default:
+					throw new ArgumentOutOfRangeException(nameof(order), order, null);
+			}
+
+			var list = await _players.Find(filter).Sort(sortBy).Limit(num).ToListAsync();
+			return list.ToArray();
+		}
+
+
+		public async Task<Player> CreatePlayer(Player player) {
 			await _players.InsertOneAsync(player);
 		    return player;
 	    }
@@ -68,6 +100,47 @@ namespace Assignment2_6.Assignment4
 
 			return await _players.FindOneAndDeleteAsync(filter);
 		}
+
+	    public async Task IncrementScorePlayer(Guid id, PlayerScoreIncrement scoreIncrement) {
+			var filter = Builders<Player>.Filter.Eq("Id", id);
+		    var update = Builders<Player>.Update.Inc("Score", scoreIncrement.ScoreIncrement);
+
+		    await _players.UpdateOneAsync(filter, update);
+	    }
+
+	    public async Task NameChangePlayer(Guid id, PlayerNameUpdate nameChange) {
+			var filter = Builders<Player>.Filter.Eq("Id", id);
+		    var update = Builders<Player>.Update.Set("Name", nameChange.Name);
+
+		    await _players.UpdateOneAsync(filter, update);
+		}
+
+	    public async Task<int> GetAverageScoreForPlayersBetweenDates(DateTime start, DateTime end) {
+			/*
+		    var aggregate = _players.Aggregate()
+			    .Match(x => x.CreationTime > start)
+			    .Match(x => x.CreationTime < end);
+		    double avg = aggregate.ToList().AsQueryable().Average(x => x.Score);
+			*/
+		    try {
+			    var aggregate = await _players.Aggregate()
+				    .Match(x => x.CreationTime > start)
+				    .Match(x => x.CreationTime < end)
+				    .Group(x => 0 /* equal to group by nothing. Couldn't find another way to do this.*/
+					    , g => new {
+					    avg = g.Average(s => s.Score)
+				    }).ToCursorAsync();
+
+			    var avg = aggregate.FirstOrDefault().avg;
+
+			    return (int) avg;
+		    }
+		    catch (Exception ex) {
+				Console.WriteLine(ex.Message);
+			    return 0;
+		    }
+		    
+	    }
 
 	    public async Task<Item> GetItem(Guid playerId, Guid itemId) {
 			var filter = Builders<Player>.Filter.Eq("Id", playerId);
